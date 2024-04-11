@@ -4,7 +4,7 @@ from .serializers import PatientSerializer
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 
 #Endpoints for retrieving all Patients By Admin Users(doctors and nurses) only
 class ALLPatients(APIView):
@@ -26,20 +26,22 @@ class PatientSignup(APIView):
 
 #Endpoint for a patient to retrieve,Update,Delete their profile
 class PatientDetailpage(APIView):
-    def get(self,request,format=None, **kwargs):
-        id = kwargs.get("id")
+    permission_classes = [IsAuthenticated]
+    def get(self,request, id, format=None, **kwargs):
+        if request.user.username != Patient.objects.get(id=id).name:
+            return Response({"Error": "You don't have such permission"})
         try:
-            if id:
-                current_patient = Patient.objects.get(id=id)
+            current_patient = Patient.objects.get(id=id)
         except Patient.DoesNotExist:
             return Response({"Error":"Patient not found"}, status=status.HTTP_404_NOT_FOUND)
-        serialized_patient = PatientSerializer(current_patient,many=False)
+        
+        serialized_patient = PatientSerializer(current_patient, many=False)
         return Response(serialized_patient.data,status=status.HTTP_200_OK)  
     
-    def put(self,request,format=None, **kwargs):
-        id = kwargs.get("id")
+    def put(self,request, id, format=None, **kwargs):
+        if request.user.username != Patient.objects.get(id=id).name:
+            return Response({"Error": "You don't have such permission"})
         try:
-            if id:
                 current_patient = Patient.objects.get(id=id)
         except Patient.DoesNotExist:
             return Response({"Error":"Patient does not exist"}, status=status.HTTP_404_NOT_FOUND)
@@ -49,11 +51,11 @@ class PatientDetailpage(APIView):
         message={"Success":"Patient Updated successfully"}
         return Response(message,status=status.HTTP_202_ACCEPTED)
     
-    def delete(self,request,format=None, **kwargs):
-        id = kwargs.get("id")
+    def delete(self,request, id, format=None, **kwargs):
+        if request.user.username != Patient.objects.get(id=id).name:
+            return Response({"Error": "You don't have such permission"})
         try:
-            if id:
-                current_patient = Patient.objects.get(id=id)
+            current_patient = Patient.objects.get(id=id)
         except Patient.DoesNotExist:
             return Response({"Error":"Patient already deleted"}, status=status.HTTP_404_NOT_FOUND)
         current_patient.delete()
